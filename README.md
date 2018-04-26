@@ -1,3 +1,7 @@
+# Why this Fork?
+- [ ] Configure a Mask R-CNN Network with Mobilenet as Backbone / Feature Extractor in `research/object_detection`.
+
+
 # TensorFlow Models
 
 This repository contains a number of different models implemented in [TensorFlow](https://www.tensorflow.org):
