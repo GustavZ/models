@@ -79,6 +79,8 @@ flags.DEFINE_boolean('run_once', False, 'Option to only run a single pass of '
                      'provided config.')
 FLAGS = flags.FLAGS
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1' # ADDED BY GUSTAV
+
 
 def main(unused_argv):
   assert FLAGS.checkpoint_dir, '`checkpoint_dir` is missing.'

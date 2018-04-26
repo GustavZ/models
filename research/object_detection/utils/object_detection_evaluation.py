@@ -184,9 +184,15 @@ class ObjectDetectionEvaluator(DetectionEvaluator):
     if image_id in self._image_ids:
       raise ValueError('Image with id {} already added.'.format(image_id))
 
+    #print ("groundtruth_dict= ", groundtruth_dict)
+    #print ("standard_fields.InputDataFields.groundtruth_classes= ", standard_fields.InputDataFields.groundtruth_classes)
+    #print ("groundtruth_dict[standard_fields.InputDataFields.groundtruth_classes]= ", groundtruth_dict[standard_fields.InputDataFields.groundtruth_classes])
+    #groundtruth_classes = groundtruth_dict[standard_fields.InputDataFields.groundtruth_classes]
+    #groundtruth_classes -= self._label_id_offset
     groundtruth_classes = (
         groundtruth_dict[standard_fields.InputDataFields.groundtruth_classes] -
         self._label_id_offset)
+
     # If the key is not present in the groundtruth_dict or the array is empty
     # (unless there are no annotations for the groundtruth on this image)
     # use values from the dictionary or insert None otherwise.

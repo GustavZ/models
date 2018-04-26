@@ -1,3 +1,4 @@
+#  models/research/object_detection/builders/losses_builder.py
 # Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -179,6 +180,11 @@ def _build_classification_loss(loss_config):
   if loss_type == 'weighted_sigmoid':
     return losses.WeightedSigmoidClassificationLoss()
 
+  if loss_type == 'confidence_weighted_sigmoid':
+    config = loss_config.confidence_weighted_sigmoid
+    return losses.ConfidenceWeightedSigmoidClassificationLoss(
+        anchorwise_output=config.anchorwise_output)
+
   if loss_type == 'weighted_sigmoid_focal':
     config = loss_config.weighted_sigmoid_focal
     alpha = None
@@ -200,3 +206,4 @@ def _build_classification_loss(loss_config):
         bootstrap_type=('hard' if config.hard_bootstrap else 'soft'))
 
   raise ValueError('Empty loss config.')
+

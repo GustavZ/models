@@ -1,3 +1,4 @@
+//  models/research/object_detection/protos/losses.proto
 syntax = "proto2";
 
 package object_detection.protos;
@@ -62,6 +63,7 @@ message ClassificationLoss {
     WeightedSoftmaxClassificationLoss weighted_softmax = 2;
     BootstrappedSigmoidClassificationLoss bootstrapped_sigmoid = 3;
     SigmoidFocalClassificationLoss weighted_sigmoid_focal = 4;
+    ConfidenceWeightedSigmoidClassificationLoss confidence_weighted_sigmoid = 5;    
   }
 }
 
@@ -70,6 +72,13 @@ message WeightedSigmoidClassificationLoss {
   // DEPRECATED, do not use.
   // Output loss per anchor.
   optional bool anchorwise_output = 1 [default=false];
+}
+
+message ConfidenceWeightedSigmoidClassificationLoss {
+  // Output loss per anchor.
+  optional bool anchorwise_output = 1 [default=false];
+  optional float object_scale = 2 [default = 5.0];  
+  optional float noobject_scale = 3 [default = 1.0];  
 }
 
 // Sigmoid Focal cross entropy loss as described in
@@ -140,3 +149,4 @@ message HardExampleMiner {
   // detection per image.
   optional int32 min_negatives_per_image = 5 [default=0];
 }
+

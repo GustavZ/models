@@ -1,3 +1,4 @@
+#  models/research/object_detection/builders/model_builder.py
 # Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,9 +25,11 @@ from object_detection.builders import matcher_builder
 from object_detection.builders import post_processing_builder
 from object_detection.builders import region_similarity_calculator_builder as sim_calc
 from object_detection.core import box_predictor
+from object_detection.anchor_generators import yolo_grid_anchor_generator
 from object_detection.meta_architectures import faster_rcnn_meta_arch
 from object_detection.meta_architectures import rfcn_meta_arch
 from object_detection.meta_architectures import ssd_meta_arch
+from object_detection.meta_architectures import yolo_meta_arch
 from object_detection.models import faster_rcnn_inception_resnet_v2_feature_extractor as frcnn_inc_res
 from object_detection.models import faster_rcnn_inception_v2_feature_extractor as frcnn_inc_v2
 from object_detection.models import faster_rcnn_nas_feature_extractor as frcnn_nas
@@ -37,7 +40,9 @@ from object_detection.models.embedded_ssd_mobilenet_v1_feature_extractor import 
 from object_detection.models.ssd_inception_v2_feature_extractor import SSDInceptionV2FeatureExtractor
 from object_detection.models.ssd_inception_v3_feature_extractor import SSDInceptionV3FeatureExtractor
 from object_detection.models.ssd_mobilenet_v1_feature_extractor import SSDMobileNetV1FeatureExtractor
+from object_detection.models.yolo_v2_darknet_19_feature_extractor import YOLOv2Darknet19FeatureExtractor
 from object_detection.models.ssd_mobilenet_v2_feature_extractor import SSDMobileNetV2FeatureExtractor
+from object_detection.models.faster_rcnn_mobilenet_v1_feature_extractor import FasterRCNNMobilenetV1FeatureExtractor
 from object_detection.protos import model_pb2
 
 # A map of names to SSD feature extractors.
@@ -50,6 +55,7 @@ SSD_FEATURE_EXTRACTOR_CLASS_MAP = {
     'ssd_resnet101_v1_fpn': ssd_resnet_v1_fpn.SSDResnet101V1FpnFeatureExtractor,
     'ssd_resnet152_v1_fpn': ssd_resnet_v1_fpn.SSDResnet152V1FpnFeatureExtractor,
     'embedded_ssd_mobilenet_v1': EmbeddedSSDMobileNetV1FeatureExtractor,
+    'yolo_v2_darknet_19': YOLOv2Darknet19FeatureExtractor,
 }
 
 # A map of names to Faster R-CNN feature extractors.
@@ -68,6 +74,8 @@ FASTER_RCNN_FEATURE_EXTRACTOR_CLASS_MAP = {
     frcnn_resnet_v1.FasterRCNNResnet101FeatureExtractor,
     'faster_rcnn_resnet152':
     frcnn_resnet_v1.FasterRCNNResnet152FeatureExtractor,
+    'faster_rcnn_mobilenet_v1':
+    FasterRCNNMobilenetV1FeatureExtractor,
 }
 
 
@@ -185,7 +193,29 @@ def _build_ssd_model(ssd_config, is_training, add_summaries,
   normalize_loss_by_num_matches = ssd_config.normalize_loss_by_num_matches
   normalize_loc_loss_by_codesize = ssd_config.normalize_loc_loss_by_codesize
 
-  return ssd_meta_arch.SSDMetaArch(
+  common_kwargs = {
+      'is_training':is_training,
+      'anchor_generator':anchor_generator,
+      'box_predictor':ssd_box_predictor,
+      'box_coder':box_coder,
+      'feature_extractor':feature_extractor,
+      'matcher':matcher,
+      'region_similarity_calculator':region_similarity_calculator,
+      'image_resizer_fn':image_resizer_fn,
+      'non_max_suppression_fn':non_max_suppression_fn,
+      'score_conversion_fn':score_conversion_fn,
+      'classification_loss':classification_loss,
+      'localization_loss':localization_loss,
+      'classification_loss_weight':classification_weight,
+      'localization_loss_weight':localization_weight,
+      'normalize_loss_by_num_matches':normalize_loss_by_num_matches,
+      'hard_example_miner':hard_example_miner}
+
+  if isinstance(anchor_generator, yolo_grid_anchor_generator.YoloGridAnchorGenerator):
+    return yolo_meta_arch.YOLOMetaArch(**common_kwargs)
+  else:
+    #return ssd_meta_arch.SSDMetaArch(**common_kwargs)
+    return ssd_meta_arch.SSDMetaArch(
       is_training,
       anchor_generator,
       ssd_box_predictor,
@@ -209,6 +239,7 @@ def _build_ssd_model(ssd_config, is_training, add_summaries,
       freeze_batchnorm=ssd_config.freeze_batchnorm,
       inplace_batchnorm_update=ssd_config.inplace_batchnorm_update,
       add_background_class=add_background_class)
+
 
 
 def _build_faster_rcnn_feature_extractor(
