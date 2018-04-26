@@ -1,4 +1,5 @@
 # Why this Fork?
+- [X] Add Yolo V2 (darknet19) Model to `research/object_detection`.
 - [ ] Configure a Mask R-CNN Network with Mobilenet as Backbone / Feature Extractor in `research/object_detection`.
 
 
