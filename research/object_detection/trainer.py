@@ -32,7 +32,7 @@ from object_detection.utils import ops as util_ops
 from object_detection.utils import variables_helper
 from deployment import model_deploy
 
-tf.logging.set_verbosity(tf.logging.INFO) # ADDED BY GUSTAV
+tf.logging.set_verbosity(tf.logging.INFO) # ADDED BY GUSTAVZ
 slim = tf.contrib.slim
 
 
@@ -355,9 +355,9 @@ def train(create_tensor_dict_fn,
     # Soft placement allows placing on CPU ops without GPU implementation.
     session_config = tf.ConfigProto(allow_soft_placement=True,
                                     log_device_placement=False)
-    session_config.gpu_options.allow_growth = True # ADDED BY GUSTAV
-    #session_config.gpu_options.per_process_gpu_memory_fraction = 0.9 # ADDED BY GUSTAV
-    session_config.gpu_options.allocator_type ='BFC' # ADDED BY GUSTAV
+    session_config.gpu_options.allow_growth = True # ADDED BY GUSTAVZ
+    #session_config.gpu_options.per_process_gpu_memory_fraction = 0.9 # ADDED BY GUSTAVZ
+    session_config.gpu_options.allocator_type ='BFC' # ADDED BY GUSTAVZ
 
     # Save checkpoints regularly.
     keep_checkpoint_every_n_hours = train_config.keep_checkpoint_every_n_hours
