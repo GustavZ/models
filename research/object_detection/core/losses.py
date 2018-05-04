@@ -1,3 +1,4 @@
+#  models/research/object_detection/core/losses.py
 # Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +24,7 @@ Localization losses:
 Classification losses:
  * WeightedSigmoidClassificationLoss
  * WeightedSoftmaxClassificationLoss
+ * WeightedSoftmaxClassificationAgainstLogitsLoss
  * BootstrappedSigmoidClassificationLoss
 """
 from abc import ABCMeta
@@ -220,6 +222,72 @@ class WeightedSigmoidClassificationLoss(Loss):
     return per_entry_cross_ent * weights
 
 
+class ConfidenceWeightedSigmoidClassificationLoss(Loss):
+  """Sigmoid cross entropy classification and Yolo confidence loss function 
+  
+  This class include 2 of 3 loss functions which is used in YOLO Object detection
+  Confidence loss: 
+    If there is object in the cell, the function tries to make the confidence score to 0  
+    otherwise, the function tries to make confidence score close to 1. The targets of 
+    the confidence loss is opposite of original confidence loss function. 
+    To use predict function of SSD, the background class predictions (at class index 0) 
+    is used as confidence prediction. 
+  Classification loss is a simple classification loss.
+
+  See https://arxiv.org/pdf/1506.02640.pdf for the loss definition.
+
+  """
+
+  def __init__(self, anchorwise_output=False):
+    """Constructor.
+
+    Args:
+      anchorwise_output: Outputs loss per anchor. (default False)
+
+    """
+    self._anchorwise_output = anchorwise_output
+
+  def _compute_loss(self,
+                    prediction_tensor,
+                    target_tensor,
+                    weights,
+                    object_scale=5.,
+                    noobject_scale=1.,
+                    class_indices=None):
+    """Compute loss function.
+
+    Args:
+      prediction_tensor: A float tensor of shape [batch_size, num_anchors,
+        num_classes] representing the predicted logits for each class
+      target_tensor: A float tensor of shape [batch_size, num_anchors,
+        num_classes] representing one-hot encoded classification targets
+      weights: a float tensor of shape [batch_size, num_anchors]
+      noobj_lambda: a float. 
+      class_indices: (Optional) A 1-D integer tensor of class indices.
+        If provided, computes loss only for the specified class indices.
+
+    Returns:
+      loss: a (scalar) tensor representing the value of the loss function
+            or a float tensor of shape [batch_size, num_anchors]
+    """
+    cls_prediction_tensor = prediction_tensor[:,:,1:]
+    cls_target_tensor = target_tensor[:,:,1:]
+    conf_prediction_tensor = tf.expand_dims(prediction_tensor[:,:,0], -1)
+    conf_target_tensor = tf.expand_dims(target_tensor[:,:,0], -1)
+    
+    diff = conf_prediction_tensor - conf_target_tensor
+    square_diff = tf.square(diff)
+    diff_eq_1 = tf.equal(diff, 1) # 0: obj | 1: noobj
+    confidence_loss = tf.reduce_sum(
+        tf.where(diff_eq_1, noobject_scale * square_diff, object_scale * square_diff),
+        2) * weights
+    classfication_loss = tf.reduce_sum((tf.nn.sigmoid_cross_entropy_with_logits(
+        labels=cls_target_tensor, logits=cls_prediction_tensor)), 2) * weights
+    if self._anchorwise_output:
+      return classfication_loss + confidence_loss
+    return tf.reduce_sum(classfication_loss) + tf.reduce_sum(confidence_loss)
+
+
 class SigmoidFocalClassificationLoss(Loss):
   """Sigmoid focal cross entropy loss.
 
@@ -311,6 +379,54 @@ class WeightedSoftmaxClassificationLoss(Loss):
     num_classes = prediction_tensor.get_shape().as_list()[-1]
     prediction_tensor = tf.divide(
         prediction_tensor, self._logit_scale, name='scale_logit')
+    per_row_cross_ent = (tf.nn.softmax_cross_entropy_with_logits(
+        labels=tf.reshape(target_tensor, [-1, num_classes]),
+        logits=tf.reshape(prediction_tensor, [-1, num_classes])))
+    return tf.reshape(per_row_cross_ent, tf.shape(weights)) * weights
+
+
+class WeightedSoftmaxClassificationAgainstLogitsLoss(Loss):
+  """Softmax loss function against logits.
+
+   Targets are expected to be provided in logits space instead of "one hot" or
+   "probability distribution" space.
+  """
+
+  def __init__(self, logit_scale=1.0):
+    """Constructor.
+
+    Args:
+      logit_scale: When this value is high, the target is "diffused" and
+                   when this value is low, the target is made peakier.
+                   (default 1.0)
+
+    """
+    self._logit_scale = logit_scale
+
+  def _scale_and_softmax_logits(self, logits):
+    """Scale logits then apply softmax."""
+    scaled_logits = tf.divide(logits, self._logit_scale, name='scale_logits')
+    return tf.nn.softmax(scaled_logits, name='convert_scores')
+
+  def _compute_loss(self, prediction_tensor, target_tensor, weights):
+    """Compute loss function.
+
+    Args:
+      prediction_tensor: A float tensor of shape [batch_size, num_anchors,
+        num_classes] representing the predicted logits for each class
+      target_tensor: A float tensor of shape [batch_size, num_anchors,
+        num_classes] representing logit classification targets
+      weights: a float tensor of shape [batch_size, num_anchors]
+
+    Returns:
+      loss: a float tensor of shape [batch_size, num_anchors]
+        representing the value of the loss function.
+    """
+    num_classes = prediction_tensor.get_shape().as_list()[-1]
+    target_tensor = self._scale_and_softmax_logits(target_tensor)
+    prediction_tensor = tf.divide(prediction_tensor, self._logit_scale,
+                                  name='scale_logits')
+
     per_row_cross_ent = (tf.nn.softmax_cross_entropy_with_logits(
         labels=tf.reshape(target_tensor, [-1, num_classes]),
         logits=tf.reshape(prediction_tensor, [-1, num_classes])))
@@ -590,3 +706,4 @@ class HardExampleMiner(object):
     num_negatives = tf.size(subsampled_selection_indices) - num_positives
     return (tf.reshape(tf.gather(indices, subsampled_selection_indices), [-1]),
             num_positives, num_negatives)
+

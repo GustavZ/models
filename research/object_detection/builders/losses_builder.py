@@ -1,3 +1,4 @@
+#  models/research/object_detection/builders/losses_builder.py
 # Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -121,6 +122,10 @@ def build_faster_rcnn_classification_loss(loss_config):
     config = loss_config.weighted_softmax
     return losses.WeightedSoftmaxClassificationLoss(
         logit_scale=config.logit_scale)
+  if loss_type == 'weighted_logits_softmax':
+    config = loss_config.weighted_logits_softmax
+    return losses.WeightedSoftmaxClassificationAgainstLogitsLoss(
+        logit_scale=config.logit_scale)
 
   # By default, Faster RCNN second stage classifier uses Softmax loss
   # with anchor-wise outputs.
@@ -179,6 +184,11 @@ def _build_classification_loss(loss_config):
   if loss_type == 'weighted_sigmoid':
     return losses.WeightedSigmoidClassificationLoss()
 
+  if loss_type == 'confidence_weighted_sigmoid':
+    config = loss_config.confidence_weighted_sigmoid
+    return losses.ConfidenceWeightedSigmoidClassificationLoss(
+        anchorwise_output=config.anchorwise_output)
+
   if loss_type == 'weighted_sigmoid_focal':
     config = loss_config.weighted_sigmoid_focal
     alpha = None
@@ -193,6 +203,11 @@ def _build_classification_loss(loss_config):
     return losses.WeightedSoftmaxClassificationLoss(
         logit_scale=config.logit_scale)
 
+  if loss_type == 'weighted_logits_softmax':
+    config = loss_config.weighted_logits_softmax
+    return losses.WeightedSoftmaxClassificationAgainstLogitsLoss(
+        logit_scale=config.logit_scale)
+
   if loss_type == 'bootstrapped_sigmoid':
     config = loss_config.bootstrapped_sigmoid
     return losses.BootstrappedSigmoidClassificationLoss(
@@ -200,3 +215,4 @@ def _build_classification_loss(loss_config):
         bootstrap_type=('hard' if config.hard_bootstrap else 'soft'))
 
   raise ValueError('Empty loss config.')
+

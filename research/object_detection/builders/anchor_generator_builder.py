@@ -1,3 +1,4 @@
+#  models/research/object_detection/builders/anchor_generator_builder.py
 # Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +18,7 @@
 
 from object_detection.anchor_generators import grid_anchor_generator
 from object_detection.anchor_generators import multiple_grid_anchor_generator
+from object_detection.anchor_generators import yolo_grid_anchor_generator
 from object_detection.anchor_generators import multiscale_grid_anchor_generator
 from object_detection.protos import anchor_generator_pb2
 
@@ -80,6 +82,25 @@ def build(anchor_generator_config):
         reduce_boxes_in_lowest_layer=(
             ssd_anchor_generator_config.reduce_boxes_in_lowest_layer))
   elif anchor_generator_config.WhichOneof(
+      'anchor_generator_oneof') == 'yolo_anchor_generator': 
+    yolo_anchor_generator_config = anchor_generator_config.yolo_anchor_generator
+    anchor_strides = None
+    if yolo_anchor_generator_config.height_stride:
+      anchor_strides = zip(yolo_anchor_generator_config.height_stride,
+                           yolo_anchor_generator_config.width_stride)
+    anchor_offsets = None
+    if yolo_anchor_generator_config.height_offset:
+      anchor_offsets = zip(yolo_anchor_generator_config.height_offset,
+                           yolo_anchor_generator_config.width_offset)
+    return yolo_grid_anchor_generator.create_yolo_anchors(
+        anchors=[float(anchors) for anchors in yolo_anchor_generator_config.anchors],
+        base_anchor_size=[
+            yolo_anchor_generator_config.base_anchor_height,
+            yolo_anchor_generator_config.base_anchor_width
+        ],
+        anchor_stride=anchor_strides,
+        anchor_offset=anchor_offsets)            
+  elif anchor_generator_config.WhichOneof(
       'anchor_generator_oneof') == 'multiscale_anchor_generator':
     cfg = anchor_generator_config.multiscale_anchor_generator
     return multiscale_grid_anchor_generator.MultiscaleGridAnchorGenerator(
@@ -92,3 +113,4 @@ def build(anchor_generator_config):
     )
   else:
     raise ValueError('Empty anchor generator.')
+

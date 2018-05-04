@@ -1,3 +1,11 @@
+# Why this Fork?
+- [X] Add Yolo V2 (darknet19) Model to `research/object_detection`.
+- [X] Configure a Mask R-CNN Network with Mobilenet as Backbone / Feature Extractor in `research/object_detection`.
+- [ ] Train mask_rcnn_mobilenet_v1_coco on the COCO Dataset
+- [ ] Deploy mask_rcnn_mobilenet_v1_coco on a Nvidia Jetson Tx2
+- [ ] Rule the World
+
+
 # TensorFlow Models
 
 This repository contains a number of different models implemented in [TensorFlow](https://www.tensorflow.org):
