@@ -318,6 +318,13 @@ class BaseTest(tf.test.TestCase):
         extra_flags=['-v', '2', '-rs', '200']
     )
 
+  def test_flag_restriction(self):
+    with self.assertRaises(SystemExit):
+      integration.run_synthetic(
+          main=imagenet_main.run_imagenet, tmp_root=self.get_temp_dir(),
+          extra_flags=['-resnet_version', '1', '-dtype', 'fp16']
+      )
+
 
 if __name__ == '__main__':
   tf.test.main()
