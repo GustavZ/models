@@ -18,9 +18,9 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='object_detection/protos/yolo_anchor_generator.proto',
   package='object_detection.protos',
+  syntax='proto2',
   serialized_pb=_b('\n3object_detection/protos/yolo_anchor_generator.proto\x12\x17object_detection.protos\"\xbd\x01\n\x13YoloAnchorGenerator\x12\x0f\n\x07\x61nchors\x18\x01 \x03(\x02\x12\x1d\n\x12\x62\x61se_anchor_height\x18\x02 \x01(\x02:\x01\x31\x12\x1c\n\x11\x62\x61se_anchor_width\x18\x03 \x01(\x02:\x01\x31\x12\x15\n\rheight_stride\x18\x04 \x03(\x05\x12\x14\n\x0cwidth_stride\x18\x05 \x03(\x05\x12\x15\n\rheight_offset\x18\x06 \x03(\x05\x12\x14\n\x0cwidth_offset\x18\x07 \x03(\x05')
 )
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
 
@@ -38,49 +38,49 @@ _YOLOANCHORGENERATOR = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='base_anchor_height', full_name='object_detection.protos.YoloAnchorGenerator.base_anchor_height', index=1,
       number=2, type=2, cpp_type=6, label=1,
-      has_default_value=True, default_value=1,
+      has_default_value=True, default_value=float(1),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='base_anchor_width', full_name='object_detection.protos.YoloAnchorGenerator.base_anchor_width', index=2,
       number=3, type=2, cpp_type=6, label=1,
-      has_default_value=True, default_value=1,
+      has_default_value=True, default_value=float(1),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='height_stride', full_name='object_detection.protos.YoloAnchorGenerator.height_stride', index=3,
       number=4, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='width_stride', full_name='object_detection.protos.YoloAnchorGenerator.width_stride', index=4,
       number=5, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='height_offset', full_name='object_detection.protos.YoloAnchorGenerator.height_offset', index=5,
       number=6, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='width_offset', full_name='object_detection.protos.YoloAnchorGenerator.width_offset', index=6,
       number=7, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -89,6 +89,7 @@ _YOLOANCHORGENERATOR = _descriptor.Descriptor(
   ],
   options=None,
   is_extendable=False,
+  syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
@@ -97,6 +98,7 @@ _YOLOANCHORGENERATOR = _descriptor.Descriptor(
 )
 
 DESCRIPTOR.message_types_by_name['YoloAnchorGenerator'] = _YOLOANCHORGENERATOR
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 YoloAnchorGenerator = _reflection.GeneratedProtocolMessageType('YoloAnchorGenerator', (_message.Message,), dict(
   DESCRIPTOR = _YOLOANCHORGENERATOR,
