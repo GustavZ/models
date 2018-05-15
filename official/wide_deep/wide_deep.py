@@ -26,6 +26,7 @@ import tensorflow as tf  # pylint: disable=g-bad-import-order
 
 from official.utils.arg_parsers import parsers
 from official.utils.logs import hooks_helper
+from official.utils.logs import logger
 from official.utils.misc import model_helpers
 
 _CSV_COLUMNS = [
@@ -45,6 +46,25 @@ _NUM_EXAMPLES = {
 
 
 LOSS_PREFIX = {'wide': 'linear/', 'deep': 'dnn/'}
+
+
+def define_wide_deep_flags():
+  """Add supervised learning flags, as well as wide-deep model type."""
+  flags_core.define_base()
+  flags_core.define_benchmark()
+
+  flags.adopt_module_key_flags(flags_core)
+
+  flags.DEFINE_enum(
+      name="model_type", short_name="mt", default="wide_deep",
+      enum_values=['wide', 'deep', 'wide_deep'],
+      help="Select model topology.")
+
+  flags_core.set_defaults(data_dir='/tmp/census_data',
+                          model_dir='/tmp/census_model',
+                          train_epochs=40,
+                          epochs_between_evals=2,
+                          batch_size=40)
 
 
 def build_model_columns():
@@ -215,7 +235,16 @@ def main(argv):
   def eval_input_fn():
     return input_fn(test_file, 1, False, flags.batch_size)
 
-  loss_prefix = LOSS_PREFIX.get(flags.model_type, '')
+  run_params = {
+      'batch_size': flags_obj.batch_size,
+      'train_epochs': flags_obj.train_epochs,
+      'model_type': flags_obj.model_type,
+  }
+
+  benchmark_logger = logger.config_benchmark_logger(flags_obj)
+  benchmark_logger.log_run_info('wide_deep', 'Census Income', run_params)
+
+  loss_prefix = LOSS_PREFIX.get(flags_obj.model_type, '')
   train_hooks = hooks_helper.get_train_hooks(
       flags.hooks, batch_size=flags.batch_size,
       tensors_to_log={'average_loss': loss_prefix + 'head/truediv',
@@ -227,11 +256,15 @@ def main(argv):
     results = model.evaluate(input_fn=eval_input_fn)
 
     # Display evaluation metrics
-    print('Results at epoch', (n + 1) * flags.epochs_between_evals)
-    print('-' * 60)
+    tf.logging.info('Results at epoch %d / %d',
+                    (n + 1) * flags_obj.epochs_between_evals,
+                    flags_obj.train_epochs)
+    tf.logging.info('-' * 60)
 
     for key in sorted(results):
-      print('%s: %s' % (key, results[key]))
+      tf.logging.info('%s: %s' % (key, results[key]))
+
+    benchmark_logger.log_evaluation_result(results)
 
     if model_helpers.past_stop_threshold(
         flags.stop_threshold, results['accuracy']):

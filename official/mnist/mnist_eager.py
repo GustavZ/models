@@ -103,7 +103,7 @@ def main(argv):
 
   # Automatically determine device and data_format
   (device, data_format) = ('/gpu:0', 'channels_first')
-  if flags.no_gpu or tfe.num_gpus() <= 0:
+  if flags_obj.no_gpu or not tf.test.is_gpu_available():
     (device, data_format) = ('/cpu:0', 'channels_last')
   # If data_format is defined in FLAGS, overwrite automatically set value.
   if flags.data_format is not None:
