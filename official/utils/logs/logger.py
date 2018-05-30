@@ -47,20 +47,20 @@ _logger_lock = threading.Lock()
 
 
 def config_benchmark_logger(flag_obj=None):
-  """Config the global benchmark logger"""
+  """Config the global benchmark logger."""
   _logger_lock.acquire()
   try:
     global _benchmark_logger
     if not flag_obj:
       flag_obj = FLAGS
 
-    if (not hasattr(flag_obj, 'benchmark_logger_type') or
-        flag_obj.benchmark_logger_type == 'BaseBenchmarkLogger'):
+    if (not hasattr(flag_obj, "benchmark_logger_type") or
+        flag_obj.benchmark_logger_type == "BaseBenchmarkLogger"):
       _benchmark_logger = BaseBenchmarkLogger()
-    elif flag_obj.benchmark_logger_type == 'BenchmarkFileLogger':
+    elif flag_obj.benchmark_logger_type == "BenchmarkFileLogger":
       _benchmark_logger = BenchmarkFileLogger(flag_obj.benchmark_log_dir)
-    elif flag_obj.benchmark_logger_type == 'BenchmarkBigQueryLogger':
-      from official.benchmark import benchmark_uploader as bu # pylint: disable=g-import-not-at-top
+    elif flag_obj.benchmark_logger_type == "BenchmarkBigQueryLogger":
+      from official.benchmark import benchmark_uploader as bu  # pylint: disable=g-import-not-at-top
       bq_uploader = bu.BigQueryUploader(gcp_project=flag_obj.gcp_project)
       _benchmark_logger = BenchmarkBigQueryLogger(
           bigquery_uploader=bq_uploader,
@@ -69,8 +69,8 @@ def config_benchmark_logger(flag_obj=None):
           bigquery_metric_table=flag_obj.bigquery_metric_table,
           run_id=str(uuid.uuid4()))
     else:
-      raise ValueError('Unrecognized benchmark_logger_type: %s',
-                       flag_obj.benchmark_logger_type)
+      raise ValueError("Unrecognized benchmark_logger_type: %s"
+                       % flag_obj.benchmark_logger_type)
 
   finally:
     _logger_lock.release()
@@ -181,9 +181,6 @@ class BenchmarkFileLogger(BaseBenchmarkLogger):
                            e)
 
 
-<<<<<<< HEAD
-def _gather_run_info(model_name):
-=======
 class BenchmarkBigQueryLogger(BaseBenchmarkLogger):
   """Class to log the benchmark information to BigQuery data store."""
 
@@ -246,8 +243,8 @@ class BenchmarkBigQueryLogger(BaseBenchmarkLogger):
          self._run_id,
          run_info))
 
+
 def _gather_run_info(model_name, dataset_name, run_params):
->>>>>>> upstream/master
   """Collect the benchmark run information for the local environment."""
   run_info = {
       "model_name": model_name,
@@ -284,6 +281,22 @@ def _process_metric_to_json(
 def _collect_tensorflow_info(run_info):
   run_info["tensorflow_version"] = {
       "version": tf.VERSION, "git_hash": tf.GIT_VERSION}
+
+
+def _collect_run_params(run_info, run_params):
+  """Log the parameter information for the benchmark run."""
+  def process_param(name, value):
+    type_check = {
+        str: {"name": name, "string_value": value},
+        int: {"name": name, "long_value": value},
+        bool: {"name": name, "bool_value": str(value)},
+        float: {"name": name, "float_value": value},
+    }
+    return type_check.get(type(value),
+                          {"name": name, "string_value": str(value)})
+  if run_params:
+    run_info["run_parameters"] = [
+        process_param(k, v) for k, v in sorted(run_params.items())]
 
 
 def _collect_tensorflow_environment_variables(run_info):
