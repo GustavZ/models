@@ -2,7 +2,9 @@
 - [X] Add Yolo V2 (darknet19) Model to `research/object_detection`.
 - [X] Configure a Mask R-CNN Network with Mobilenet as Backbone / Feature Extractor in `research/object_detection`.
 - [X] Train mask_rcnn_mobilenet_v1_coco on the COCO Dataset
-- [ ] Deploy mask_rcnn_mobilenet_v1_coco on a Nvidia Jetson Tx2
+- [X] Fix Pre- and Postprocessing Deviceplacement for SSD and Faster R-CNN Models on CPU
+- [X] Deploy mask_rcnn_mobilenet_v1_coco on a Nvidia Jetson Tx2 **on CPU**
+- [ ] Deploy mask_rcnn_mobilenet_v1_coco on a Nvidia Jetson Tx2 **on GPU**
 - [ ] Rule the World
 
 
