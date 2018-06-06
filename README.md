@@ -3,6 +3,7 @@
 - [X] Configure a Mask R-CNN Network with Mobilenet as Backbone / Feature Extractor in `research/object_detection`.
 - [X] Train mask_rcnn_mobilenet_v1_coco on the COCO Dataset
 - [X] Fix Pre- and Postprocessing Deviceplacement for SSD and Faster R-CNN Models on CPU
+- [X] Add Option to evaluate either on all checkpoints and/or only on CPU (for low resources users)
 - [X] Deploy mask_rcnn_mobilenet_v1_coco on a Nvidia Jetson Tx2 **on CPU**
 - [ ] Deploy mask_rcnn_mobilenet_v1_coco on a Nvidia Jetson Tx2 **on GPU**
 - [ ] Rule the World
