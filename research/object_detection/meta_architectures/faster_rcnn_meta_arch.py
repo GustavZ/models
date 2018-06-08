@@ -517,17 +517,17 @@ class FasterRCNNMetaArch(model.DetectionModel):
     """
     if inputs.dtype is not tf.float32:
       raise ValueError('`preprocess` expects a tf.float32 tensor')
-    with tf.device('/cpu:0'): #Put Preprocessing on CPU #ADDED BY GUSTAVZ
-        with tf.name_scope('Preprocessor'):
-          outputs = shape_utils.static_or_dynamic_map_fn(
-              self._image_resizer_fn,
-              elems=inputs,
-              dtype=[tf.float32, tf.int32],
-              parallel_iterations=self._parallel_iterations)
-          resized_inputs = outputs[0]
-          true_image_shapes = outputs[1]
-          return (self._feature_extractor.preprocess(resized_inputs),
-                  true_image_shapes)
+    #with tf.device('/cpu:0'): #Put Preprocessing on CPU #ADDED BY GUSTAVZ
+    with tf.name_scope('Preprocessor'):
+      outputs = shape_utils.static_or_dynamic_map_fn(
+          self._image_resizer_fn,
+          elems=inputs,
+          dtype=[tf.float32, tf.int32],
+          parallel_iterations=self._parallel_iterations)
+      resized_inputs = outputs[0]
+      true_image_shapes = outputs[1]
+      return (self._feature_extractor.preprocess(resized_inputs),
+              true_image_shapes)
 
   def _compute_clip_window(self, image_shapes):
     """Computes clip window for non max suppression based on image shapes.
@@ -929,6 +929,13 @@ class FasterRCNNMetaArch(model.DetectionModel):
     with slim.arg_scope(self._first_stage_box_predictor_arg_scope_fn()):
       kernel_size = self._first_stage_box_predictor_kernel_size
       #ADDED BY GUSTAV: changed conv2d to separable_conv2d
+      rpn_box_predictor_features = slim.conv2d(
+          rpn_features_to_crop,
+          self._first_stage_box_predictor_depth,
+          kernel_size=[kernel_size, kernel_size],
+          rate=self._first_stage_atrous_rate,
+          activation_fn=tf.nn.relu6)
+      """
       rpn_box_predictor_features = slim.separable_conv2d(
           rpn_features_to_crop,
           self._first_stage_box_predictor_depth,
@@ -936,6 +943,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
           depth_multiplier=1.0,
           rate=self._first_stage_atrous_rate,
           activation_fn=tf.nn.relu6)
+      """
     return (rpn_box_predictor_features, rpn_features_to_crop,
             anchors, image_shape)
 
@@ -1086,34 +1094,34 @@ class FasterRCNNMetaArch(model.DetectionModel):
       ValueError: If `predict` is called before `preprocess`.
     """
 
-    with tf.device('/cpu:0'): #Put Postprocessing on CPU #ADDED BY GUSTAVZ
-        with tf.name_scope('FirstStagePostprocessor'):
-          if self._number_of_stages == 1:
-            proposal_boxes, proposal_scores, num_proposals = self._postprocess_rpn(
-                prediction_dict['rpn_box_encodings'],
-                prediction_dict['rpn_objectness_predictions_with_background'],
-                prediction_dict['anchors'],
-                true_image_shapes,
-                true_image_shapes)
-            return {
-                fields.DetectionResultFields.detection_boxes: proposal_boxes,
-                fields.DetectionResultFields.detection_scores: proposal_scores,
-                fields.DetectionResultFields.num_detections:
-                    tf.to_float(num_proposals),
-            }
+    #with tf.device('/cpu:0'): #Put Postprocessing on CPU #ADDED BY GUSTAVZ
+    with tf.name_scope('FirstStagePostprocessor'):
+      if self._number_of_stages == 1:
+        proposal_boxes, proposal_scores, num_proposals = self._postprocess_rpn(
+            prediction_dict['rpn_box_encodings'],
+            prediction_dict['rpn_objectness_predictions_with_background'],
+            prediction_dict['anchors'],
+            true_image_shapes,
+            true_image_shapes)
+        return {
+            fields.DetectionResultFields.detection_boxes: proposal_boxes,
+            fields.DetectionResultFields.detection_scores: proposal_scores,
+            fields.DetectionResultFields.num_detections:
+                tf.to_float(num_proposals),
+        }
 
-    with tf.device('/cpu:0'): #Put Postprocessing on CPU #ADDED BY GUSTAVZ
-        with tf.name_scope('SecondStagePostprocessor'):
-          if self._number_of_stages == 2:
-            mask_predictions = prediction_dict.get(box_predictor.MASK_PREDICTIONS)
-            detections_dict = self._postprocess_box_classifier(
-                prediction_dict['refined_box_encodings'],
-                prediction_dict['class_predictions_with_background'],
-                prediction_dict['proposal_boxes'],
-                prediction_dict['num_proposals'],
-                true_image_shapes,
-                mask_predictions=mask_predictions)
-            return detections_dict
+    #with tf.device('/cpu:0'): #Put Postprocessing on CPU #ADDED BY GUSTAVZ
+    with tf.name_scope('SecondStagePostprocessor'):
+      if self._number_of_stages == 2:
+        mask_predictions = prediction_dict.get(box_predictor.MASK_PREDICTIONS)
+        detections_dict = self._postprocess_box_classifier(
+            prediction_dict['refined_box_encodings'],
+            prediction_dict['class_predictions_with_background'],
+            prediction_dict['proposal_boxes'],
+            prediction_dict['num_proposals'],
+            true_image_shapes,
+            mask_predictions=mask_predictions)
+        return detections_dict
 
     if self._number_of_stages == 3:
       # Post processing is already performed in 3rd stage. We need to transfer
