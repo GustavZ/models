@@ -928,10 +928,12 @@ class FasterRCNNMetaArch(model.DetectionModel):
                                                       feature_map_shape[2])]))
     with slim.arg_scope(self._first_stage_box_predictor_arg_scope_fn()):
       kernel_size = self._first_stage_box_predictor_kernel_size
-      rpn_box_predictor_features = slim.conv2d(
+      #ADDED BY GUSTAV: changed conv2d to separable_conv2d
+      rpn_box_predictor_features = slim.separable_conv2d(
           rpn_features_to_crop,
           self._first_stage_box_predictor_depth,
           kernel_size=[kernel_size, kernel_size],
+          depth_multiplier=1.0,
           rate=self._first_stage_atrous_rate,
           activation_fn=tf.nn.relu6)
     return (rpn_box_predictor_features, rpn_features_to_crop,
