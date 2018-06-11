@@ -410,7 +410,8 @@ class FasterRCNNMetaArch(model.DetectionModel):
         conv_hyperparams_fn=self._first_stage_box_predictor_arg_scope_fn,
         min_depth=0, max_depth=0, num_layers_before_predictor=0,
         use_dropout=False, dropout_keep_prob=1.0, kernel_size=1,
-        box_code_size=self._box_coder.code_size)
+        box_code_size=self._box_coder.code_size,
+        use_depthwise=True) #ADDED BY GUSTAV
 
     self._first_stage_nms_score_threshold = first_stage_nms_score_threshold
     self._first_stage_nms_iou_threshold = first_stage_nms_iou_threshold
