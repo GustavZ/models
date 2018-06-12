@@ -254,7 +254,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
                hard_example_miner=None,
                parallel_iterations=16,
                add_summaries=True,
-               use_depthwise):
+               use_depthwise=False): #ADDED BY GUSTAV
     """FasterRCNNMetaArch Constructor.
 
     Args:
