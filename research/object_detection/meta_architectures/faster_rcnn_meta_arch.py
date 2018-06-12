@@ -929,6 +929,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
     with slim.arg_scope(self._first_stage_box_predictor_arg_scope_fn()):
       kernel_size = self._first_stage_box_predictor_kernel_size
       #ADDED BY GUSTAV: changed conv2d to separable_conv2d
+
       rpn_box_predictor_features = slim.conv2d(
           rpn_features_to_crop,
           self._first_stage_box_predictor_depth,
