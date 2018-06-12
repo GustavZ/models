@@ -483,7 +483,7 @@ class MaskRCNNBoxPredictor(BoxPredictor):
           [self._mask_height, self._mask_width],
           align_corners=True)
       for _ in range(self._mask_prediction_num_conv_layers - 1):
-        if self._use depthwise:
+        if self._use_depthwise:
             upsampled_features = slim.separable_conv2d(
                 upsampled_features,
                 num_outputs=num_conv_channels,

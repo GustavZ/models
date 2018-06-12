@@ -948,9 +948,6 @@ class FasterRCNNMetaArch(model.DetectionModel):
             kernel_size=[kernel_size, kernel_size],
             rate=self._first_stage_atrous_rate,
             activation_fn=tf.nn.relu6)
-      
-
-      """
     return (rpn_box_predictor_features, rpn_features_to_crop,
             anchors, image_shape)
 

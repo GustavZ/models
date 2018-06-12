@@ -85,7 +85,7 @@ def build(argscope_fn, box_predictor_config, is_training, num_classes):
         kernel_size=conv_box_predictor.kernel_size,
         box_code_size=conv_box_predictor.box_code_size,
         class_prediction_bias_init=conv_box_predictor.class_prediction_bias_init,
-        use_depthwise=conv_box_predictor.use_depthwise
+        use_depthwise=conv_box_predictor.use_depthwise #ADDED BY GUSTAV
     )
     return box_predictor_object
 
@@ -115,7 +115,8 @@ def build(argscope_fn, box_predictor_config, is_training, num_classes):
         masks_are_class_agnostic=(
             mask_rcnn_box_predictor.masks_are_class_agnostic),
         predict_keypoints=mask_rcnn_box_predictor.predict_keypoints,
-        use_depthwise=mask_rcnn_box_predictor.use_depthwise)
+        use_depthwise=mask_rcnn_box_predictor.use_depthwise #ADDED BY GUSTAV
+        )
     return box_predictor_object
 
   if box_predictor_oneof == 'rfcn_box_predictor':
