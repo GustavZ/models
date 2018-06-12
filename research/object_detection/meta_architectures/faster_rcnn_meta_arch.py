@@ -253,7 +253,8 @@ class FasterRCNNMetaArch(model.DetectionModel):
                second_stage_mask_prediction_loss_weight=1.0,
                hard_example_miner=None,
                parallel_iterations=16,
-               add_summaries=True):
+               add_summaries=True,
+               use_depthwise):
     """FasterRCNNMetaArch Constructor.
 
     Args:
@@ -383,6 +384,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
     self._image_resizer_fn = image_resizer_fn
     self._feature_extractor = feature_extractor
     self._number_of_stages = number_of_stages
+    self._use_depthwise = use_depthwise
 
     # The first class is reserved as background.
     unmatched_cls_target = tf.constant(
@@ -410,7 +412,8 @@ class FasterRCNNMetaArch(model.DetectionModel):
         conv_hyperparams_fn=self._first_stage_box_predictor_arg_scope_fn,
         min_depth=0, max_depth=0, num_layers_before_predictor=0,
         use_dropout=False, dropout_keep_prob=1.0, kernel_size=1,
-        box_code_size=self._box_coder.code_size)
+        box_code_size=self._box_coder.code_size,
+        use_depthwise=self._use_depthwise) #ADDED BY GUSTAV
 
     self._first_stage_nms_score_threshold = first_stage_nms_score_threshold
     self._first_stage_nms_iou_threshold = first_stage_nms_iou_threshold
