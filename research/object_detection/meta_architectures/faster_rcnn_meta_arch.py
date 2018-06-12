@@ -253,7 +253,8 @@ class FasterRCNNMetaArch(model.DetectionModel):
                second_stage_mask_prediction_loss_weight=1.0,
                hard_example_miner=None,
                parallel_iterations=16,
-               add_summaries=True):
+               add_summaries=True,
+               use_depthwise=False):
     """FasterRCNNMetaArch Constructor.
 
     Args:
@@ -360,6 +361,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
         in parallel for calls to tf.map_fn.
       add_summaries: boolean (default: True) controlling whether summary ops
         should be added to tensorflow graph.
+      use_depthwise: whether to use depth_wise convolutions in box_predictors
 
     Raises:
       ValueError: If `second_stage_batch_size` > `first_stage_max_proposals` at
@@ -383,6 +385,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
     self._image_resizer_fn = image_resizer_fn
     self._feature_extractor = feature_extractor
     self._number_of_stages = number_of_stages
+    self._use_depthwise = use_depthwise
 
     # The first class is reserved as background.
     unmatched_cls_target = tf.constant(
@@ -411,7 +414,7 @@ class FasterRCNNMetaArch(model.DetectionModel):
         min_depth=0, max_depth=0, num_layers_before_predictor=0,
         use_dropout=False, dropout_keep_prob=1.0, kernel_size=1,
         box_code_size=self._box_coder.code_size,
-        use_depthwise=True) #ADDED BY GUSTAV
+        use_depthwise=self._use_depthwise) #ADDED BY GUSTAV
 
     self._first_stage_nms_score_threshold = first_stage_nms_score_threshold
     self._first_stage_nms_iou_threshold = first_stage_nms_iou_threshold
@@ -929,21 +932,24 @@ class FasterRCNNMetaArch(model.DetectionModel):
                                                       feature_map_shape[2])]))
     with slim.arg_scope(self._first_stage_box_predictor_arg_scope_fn()):
       kernel_size = self._first_stage_box_predictor_kernel_size
-      #ADDED BY GUSTAV: changed conv2d to separable_conv2d
-      rpn_box_predictor_features = slim.conv2d(
-          rpn_features_to_crop,
-          self._first_stage_box_predictor_depth,
-          kernel_size=[kernel_size, kernel_size],
-          rate=self._first_stage_atrous_rate,
-          activation_fn=tf.nn.relu6)
-      """
-      rpn_box_predictor_features = slim.separable_conv2d(
-          rpn_features_to_crop,
-          self._first_stage_box_predictor_depth,
-          kernel_size=[kernel_size, kernel_size],
-          depth_multiplier=1.0,
-          rate=self._first_stage_atrous_rate,
-          activation_fn=tf.nn.relu6)
+      #ADDED BY GUSTAV: optional separable_conv2d
+      if self._use_depthwise:
+        rpn_box_predictor_features = slim.separable_conv2d(
+            rpn_features_to_crop,
+            self._first_stage_box_predictor_depth,
+            kernel_size=[kernel_size, kernel_size],
+            depth_multiplier=1.0,
+            rate=self._first_stage_atrous_rate,
+            activation_fn=tf.nn.relu6)
+      else:
+        rpn_box_predictor_features = slim.conv2d(
+            rpn_features_to_crop,
+            self._first_stage_box_predictor_depth,
+            kernel_size=[kernel_size, kernel_size],
+            rate=self._first_stage_atrous_rate,
+            activation_fn=tf.nn.relu6)
+      
+
       """
     return (rpn_box_predictor_features, rpn_features_to_crop,
             anchors, image_shape)

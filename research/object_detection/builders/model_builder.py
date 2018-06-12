@@ -301,6 +301,7 @@ def _build_faster_rcnn_model(frcnn_config, is_training, add_summaries):
     ValueError: If frcnn_config.type is not recognized (i.e. not registered in
       model_class_map).
   """
+  use_depthwise = frcnn_config.use_depthwise # ADDED BY GUSTAV
   num_classes = frcnn_config.num_classes
   image_resizer_fn = image_resizer_builder.build(frcnn_config.image_resizer)
 
@@ -405,4 +406,5 @@ def _build_faster_rcnn_model(frcnn_config, is_training, add_summaries):
         second_stage_mask_rcnn_box_predictor=second_stage_box_predictor,
         second_stage_mask_prediction_loss_weight=(
             second_stage_mask_prediction_loss_weight),
+        use_depthwise=use_depthwise, #ADDED BY GUSTAV
         **common_kwargs)

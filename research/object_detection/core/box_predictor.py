@@ -308,7 +308,9 @@ class MaskRCNNBoxPredictor(BoxPredictor):
                mask_prediction_num_conv_layers=2,
                mask_prediction_conv_depth=256,
                masks_are_class_agnostic=False,
-               predict_keypoints=False):
+               predict_keypoints=False,
+               use_depthwise=False,
+               replace_fc=False):
     """Constructor.
 
     Args:
@@ -341,6 +343,9 @@ class MaskRCNNBoxPredictor(BoxPredictor):
       masks_are_class_agnostic: Boolean determining if the mask-head is
         class-agnostic or not.
       predict_keypoints: Whether to predict keypoints insde detection boxes.
+      use_depthwise: whether to use depthwise convolutions for prediction
+        steps. Default is False.
+      replace_fc: whether to replace the two fully_connected layers with Conv layers
 
 
     Raises:
@@ -371,6 +376,8 @@ class MaskRCNNBoxPredictor(BoxPredictor):
     if self._mask_prediction_num_conv_layers < 2:
       raise ValueError(
           'Mask prediction should consist of at least 2 conv layers')
+    self._use_depthwise = use_depthwise # ADDED BY GUSTAV
+    self._replace_fc = replace_fc # ADDED BY GUSTAV
 
   @property
   def num_classes(self):
@@ -404,16 +411,19 @@ class MaskRCNNBoxPredictor(BoxPredictor):
                                               keep_prob=self._dropout_keep_prob,
                                               is_training=self._is_training)
     with slim.arg_scope(self._fc_hyperparams_fn()):
-      box_encodings = slim.fully_connected(
-          flattened_image_features,
-          self._num_classes * self._box_code_size,
-          activation_fn=None,
-          scope='BoxEncodingPredictor')
-      class_predictions_with_background = slim.fully_connected(
-          flattened_image_features,
-          self._num_classes + 1,
-          activation_fn=None,
-          scope='ClassPredictor')
+      if self._replace_fc: # ADDED BY GUSTAV
+          pass
+      else:
+          box_encodings = slim.fully_connected( #TODO: Possible to exchange fully_connected?
+              flattened_image_features,
+              self._num_classes * self._box_code_size,
+              activation_fn=None,
+              scope='BoxEncodingPredictor')
+          class_predictions_with_background = slim.fully_connected( #TODO: Possible to exchange fully_connected?
+              flattened_image_features,
+              self._num_classes + 1,
+              activation_fn=None,
+              scope='ClassPredictor')
     box_encodings = tf.reshape(
         box_encodings, [-1, 1, self._num_classes, self._box_code_size])
     class_predictions_with_background = tf.reshape(
@@ -473,10 +483,17 @@ class MaskRCNNBoxPredictor(BoxPredictor):
           [self._mask_height, self._mask_width],
           align_corners=True)
       for _ in range(self._mask_prediction_num_conv_layers - 1):
-        upsampled_features = slim.conv2d(
-            upsampled_features,
-            num_outputs=num_conv_channels,
-            kernel_size=[3, 3])
+        if self._use depthwise:
+            upsampled_features = slim.separable_conv2d(
+                upsampled_features,
+                num_outputs=num_conv_channels,
+                kernel_size=[3, 3],
+                depth_multiplier=1.0)
+        else:
+            upsampled_features = slim.conv2d(
+                upsampled_features,
+                num_outputs=num_conv_channels,
+                kernel_size=[3, 3])
       num_masks = 1 if self._masks_are_class_agnostic else self.num_classes
       mask_predictions = slim.conv2d(upsampled_features,
                                      num_outputs=num_masks,
@@ -623,7 +640,7 @@ class ConvolutionalBoxPredictor(BoxPredictor):
         class_predictions.
       class_prediction_bias_init: constant value to initialize bias of the last
         conv2d layer before class prediction.
-      use_depthwise: Whether to use depthwise convolutions for prediction
+      use_depthwise: whether to use depthwise convolutions for prediction
         steps. Default is False.
 
     Raises:
@@ -778,7 +795,8 @@ class WeightSharedConvolutionalBoxPredictor(BoxPredictor):
                num_layers_before_predictor,
                box_code_size,
                kernel_size=3,
-               class_prediction_bias_init=0.0):
+               class_prediction_bias_init=0.0,
+               use_depthwise=False):
     """Constructor.
 
     Args:
@@ -796,6 +814,8 @@ class WeightSharedConvolutionalBoxPredictor(BoxPredictor):
       kernel_size: Size of final convolution kernel.
       class_prediction_bias_init: constant value to initialize bias of the last
         conv2d layer before class prediction.
+      use_depthwise: whether to use depthwise convolutions for prediction
+        steps. Default is False.
     """
     super(WeightSharedConvolutionalBoxPredictor, self).__init__(is_training,
                                                                 num_classes)
@@ -854,7 +874,7 @@ class WeightSharedConvolutionalBoxPredictor(BoxPredictor):
         box_encodings_net = image_feature
         class_predictions_net = image_feature
         with slim.arg_scope(self._conv_hyperparams_fn()):
-          for i in range(self._num_layers_before_predictor):
+          for i in range(self._num_layers_before_predictor): #TODO: Towers also Depthwise possible?
             box_encodings_net = slim.conv2d(
                 box_encodings_net,
                 self._depth,
@@ -862,14 +882,23 @@ class WeightSharedConvolutionalBoxPredictor(BoxPredictor):
                 stride=1,
                 padding='SAME',
                 scope='BoxEncodingPredictionTower/conv2d_{}'.format(i))
-          box_encodings = slim.conv2d(
-              box_encodings_net,
-              num_predictions_per_location * self._box_code_size,
-              [self._kernel_size, self._kernel_size],
-              activation_fn=None, stride=1, padding='SAME',
-              scope='BoxEncodingPredictor')
-
-          for i in range(self._num_layers_before_predictor):
+          if self._use_depthwise: #ADDED BY GUSTAV
+              box_encodings = slim.separable_conv2d(
+                  box_encodings_net, None, [self._kernel_size, self._kernel_size],
+                  padding='SAME', depth_multiplier=1, stride=1,
+                  rate=1, scope='BoxEncodingPredictor_depthwise')
+              box_encodings = slim.conv2d(
+                  box_encodings,
+                  num_predictions_per_location * self._box_code_size, [1, 1],
+                  scope='BoxEncodingPredictor')
+          else:
+              box_encodings = slim.conv2d(
+                  box_encodings_net,
+                  num_predictions_per_location * self._box_code_size,
+                  [self._kernel_size, self._kernel_size],
+                  activation_fn=None, stride=1, padding='SAME',
+                  scope='BoxEncodingPredictor')
+          for i in range(self._num_layers_before_predictor): #TODO: Towers also Depthwise possible?
             class_predictions_net = slim.conv2d(
                 class_predictions_net,
                 self._depth,
@@ -877,15 +906,24 @@ class WeightSharedConvolutionalBoxPredictor(BoxPredictor):
                 stride=1,
                 padding='SAME',
                 scope='ClassPredictionTower/conv2d_{}'.format(i))
-          class_predictions_with_background = slim.conv2d(
-              class_predictions_net,
-              num_predictions_per_location * num_class_slots,
-              [self._kernel_size, self._kernel_size],
-              activation_fn=None, stride=1, padding='SAME',
-              biases_initializer=tf.constant_initializer(
-                  self._class_prediction_bias_init),
-              scope='ClassPredictor')
-
+          if self._use_depthwise: #ADDED BY GUSTAV
+              class_predictions_with_background = slim.separable_conv2d(
+                  net, None, [self._kernel_size, self._kernel_size],
+                  padding='SAME', depth_multiplier=1, stride=1,
+                  rate=1, scope='ClassPredictor_depthwise')
+              class_predictions_with_background = slim.conv2d(
+                  class_predictions_with_background,
+                  num_predictions_per_location * num_class_slots,
+                  [1, 1], scope='ClassPredictor')
+          else:
+              class_predictions_with_background = slim.conv2d(
+                  class_predictions_net,
+                  num_predictions_per_location * num_class_slots,
+                  [self._kernel_size, self._kernel_size],
+                  activation_fn=None, stride=1, padding='SAME',
+                  biases_initializer=tf.constant_initializer(
+                      self._class_prediction_bias_init),
+                  scope='ClassPredictor')
           combined_feature_map_shape = (shape_utils.
                                         combined_static_and_dynamic_shape(
                                             image_feature))

@@ -137,6 +137,9 @@ message FasterRcnn {
   // a control dependency on tf.GraphKeys.UPDATE_OPS for train/loss op in order
   // to update the batch norm moving average parameters.
   optional bool inplace_batchnorm_update = 30 [default = false];
+  
+  // Whether to use depthwise separable convolutions in first_stage_box_predictor (ADDED BY GUSTAV)
+  optional bool use_depthwise = 31 [default=false];
 }
 
 
