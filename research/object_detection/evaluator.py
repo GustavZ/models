@@ -39,12 +39,14 @@ EVAL_METRICS_CLASS_DICT = {
         object_detection_evaluation.PascalInstanceSegmentationEvaluator,
     'weighted_pascal_voc_instance_segmentation_metrics':
         object_detection_evaluation.WeightedPascalInstanceSegmentationEvaluator,
-    'open_images_detection_metrics':
+    'open_images_V2_detection_metrics':
         object_detection_evaluation.OpenImagesDetectionEvaluator,
     'coco_detection_metrics':
         coco_evaluation.CocoDetectionEvaluator,
     'coco_mask_metrics':
         coco_evaluation.CocoMaskEvaluator,
+    'oid_challenge_object_detection_metrics':
+        object_detection_evaluation.OpenImagesDetectionChallengeEvaluator,
 }
 
 EVAL_DEFAULT_METRIC = 'pascal_voc_detection_metrics'
@@ -150,7 +152,7 @@ def get_evaluators(eval_config, categories):
 
 
 def evaluate(create_input_dict_fn, create_model_fn, eval_config, categories,
-             checkpoint_dir, eval_dir, evaluate_all_checkpoints,graph_hook_fn=None, evaluator_list=None):
+             checkpoint_dir, eval_dir, graph_hook_fn=None, evaluator_list=None):
   """Evaluation function for detection models.
 
   Args:
@@ -251,14 +253,6 @@ def evaluate(create_input_dict_fn, create_model_fn, eval_config, categories,
   def _restore_latest_checkpoint(sess):
     latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
     saver.restore(sess, latest_checkpoint)
-  def _restore_specific_checkpoint(sess,checkpoint_file):
-    saver.restore(sess,checkpoint_file)
-
-  if evaluate_all_checkpoints:
-    print("> evaluating all checkpoints")
-    _restore_fn = _restore_specific_checkpoint
-  else:
-    _restore_fn = _restore_latest_checkpoint
 
   if not evaluator_list:
     evaluator_list = get_evaluators(eval_config, categories)
@@ -269,9 +263,8 @@ def evaluate(create_input_dict_fn, create_model_fn, eval_config, categories,
       evaluators=evaluator_list,
       batch_processor=_process_batch,
       checkpoint_dirs=[checkpoint_dir],
-      evaluate_all_checkpoints=evaluate_all_checkpoints,
       variables_to_restore=None,
-      restore_fn=_restore_fn,
+      restore_fn=_restore_latest_checkpoint,
       num_batches=eval_config.num_examples,
       eval_interval_secs=eval_config.eval_interval_secs,
       max_number_of_evaluations=(1 if eval_config.ignore_groundtruth else
